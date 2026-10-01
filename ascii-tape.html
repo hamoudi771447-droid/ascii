@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>محوّل الحروف إلى ثنائي وASCII</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#EEF2F1;--panel:#FFFFFF;--ink:#13222C;--mute:#566872;--line:#C9D5D3;--accent:#0E8F81;--danger:#B8322F;
+  --tape:#F0B429;--tape-ink:#2E2100;--hole:#13222C;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0F1A22;--panel:#16252F;--ink:#E7EEF1;--mute:#93A6B0;--line:#27404D;--accent:#3DD6C3;--danger:#FF7B72;--hole:#0F1A22}
+}
+:root[data-theme="dark"]{--bg:#0F1A22;--panel:#16252F;--ink:#E7EEF1;--mute:#93A6B0;--line:#27404D;--accent:#3DD6C3;--danger:#FF7B72;--hole:#0F1A22}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Cairo",system-ui,sans-serif;line-height:1.7}
+.wrap{max-width:940px;margin:0 auto;padding:28px 16px 56px}
+h1{font-size:clamp(1.7rem,5vw,2.6rem);font-weight:800;line-height:1.25;margin:0 0 8px}
+.lead{margin:0 0 24px;color:var(--mute);max-width:60ch}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+.entry{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.entry input{flex:1 1 220px;min-width:0;font:600 2rem "IBM Plex Mono",monospace;text-align:center;padding:12px 16px;border-radius:12px;border:2px solid var(--line);background:var(--panel);color:var(--ink)}
+.entry input::placeholder{font:400 1rem "Cairo",sans-serif;color:var(--mute)}
+button{font:600 1rem "Cairo",sans-serif;cursor:pointer}
+.btn{padding:12px 20px;border-radius:12px;border:2px solid var(--line);background:var(--panel);color:var(--ink)}
+.btn.del{border-color:var(--danger);color:var(--danger)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:is(input,button):focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.msg{min-height:1.7em;margin:0 0 14px;color:var(--danger);font-size:.95rem}
+.tape{background:var(--tape);color:var(--tape-ink);border-radius:8px;padding:12px 10px 8px;overflow-x:auto;margin-bottom:24px;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.tape.empty{padding:34px 16px;text-align:center;font-weight:600}
+.cols{display:flex;gap:4px;width:max-content;min-width:100%}
+.col{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px 4px;border-radius:8px;width:44px}
+.h{width:20px;height:20px;border-radius:50%;display:block;position:relative}
+.h.on{background:var(--hole);box-shadow:inset 0 2px 3px rgba(0,0,0,.6)}
+.h:not(.on)::after{content:"";position:absolute;inset:8px;border-radius:50%;background:rgba(0,0,0,.22)}
+.sp{width:8px;height:8px;border-radius:50%;background:var(--hole);margin:2px 0}
+.lb{font:600 1.15rem "IBM Plex Mono",monospace;margin-top:2px}
+.detail{display:grid;gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:20px}
+.glyph{font:600 clamp(3.5rem,14vw,5.5rem)/1 "IBM Plex Mono",monospace;background:var(--tape);color:var(--tape-ink);border-radius:12px;display:grid;place-items:center;min-height:120px}
+.bits{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:16px}
+.bit{border:1px solid var(--line);border-radius:8px;text-align:center;padding:4px 0}
+.bit small{display:block;font:500 .7rem "IBM Plex Mono",monospace;color:var(--mute)}
+.bit b{font:600 1.35rem "IBM Plex Mono",monospace}
+.bit.on{background:var(--tape);border-color:var(--tape);color:var(--tape-ink)}
+.bit.on small{color:var(--tape-ink)}
+.vals{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:0}
+.vals div{border-top:2px solid var(--line);padding-top:6px}
+.vals dt{color:var(--mute);font-size:.85rem}
+.vals dd{margin:0;font:600 1.15rem "IBM Plex Mono",monospace}
+.all{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.all h2{font-size:1.05rem;margin:0 0 6px}
+.all h2:not(:first-child){margin-top:14px}
+.all code{display:block;font:500 1rem/1.7 "IBM Plex Mono",monospace;word-break:break-word;overflow-wrap:anywhere;direction:ltr;text-align:left}
+@media (min-width:720px){
+  .detail{grid-template-columns:200px 1fr;align-items:center}
+  .vals{grid-template-columns:repeat(4,1fr)}
+}
+@media (max-width:420px){.bit b{font-size:1.1rem}.btn{flex:1}}
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const {useState,useRef,useEffect}=React;
+const h=React.createElement;
+const bin=c=>c.charCodeAt(0).toString(2).padStart(8,'0');
+const show=c=>c===' '?'␣':c;
+const hole=(v,k)=>h('span',{key:k,className:'h'+(v==='1'?' on':'')});
+
+function Tape({chars}){
+  const box=useRef(null);
+  useEffect(()=>{const el=box.current;if(el)el.scrollLeft=el.scrollWidth;},[chars.length]);
+  if(!chars.length)return h('div',{className:'tape empty'},'الشريط فارغ. اكتب حرفاً وسيُثقَب هنا.');
+  return h('div',{className:'tape',dir:'ltr',ref:box},
+    h('div',{className:'cols'},chars.map((c,i)=>{
+      const b=bin(c);
+      return h('div',{key:i,className:'col','aria-label':'الحرف '+show(c)+'، '+b},
+        ...[0,1,2,3].map(k=>hole(b[k],k)),
+        h('span',{className:'sp'}),
+        ...[4,5,6,7].map(k=>hole(b[k],k)),
+        h('span',{className:'lb'},show(c)));
+    })));
+}
+
+function Detail({c}){
+  const n=c.charCodeAt(0),b=bin(c);
+  const vals=[['ثنائي',b.slice(0,4)+' '+b.slice(4)],['ASCII (عشري)',String(n)],['سداسي عشري','0x'+n.toString(16).toUpperCase().padStart(2,'0')],['ثماني',n.toString(8)]];
+  return h('section',{className:'detail','aria-live':'polite'},
+    h('div',{className:'glyph','aria-hidden':'true'},show(c)),
+    h('div',null,
+      h('div',{className:'bits',dir:'ltr'},[128,64,32,16,8,4,2,1].map((w,i)=>
+        h('div',{key:w,className:'bit'+(b[i]==='1'?' on':'')},h('small',null,w),h('b',null,b[i])))),
+      h('dl',{className:'vals'},vals.map(([k,v])=>h('div',{key:k},h('dt',null,k),h('dd',{dir:'ltr'},v))))));
+}
+
+function App(){
+  const [chars,setChars]=useState([]);
+  const [err,setErr]=useState('');
+  const ref=useRef(null);
+  const last=chars.length?chars[chars.length-1]:'';
+
+  function add(text){
+    const next=[];let bad=false;
+    for(const c of text){const n=c.charCodeAt(0);if(c.length===1&&n>=32&&n<=126)next.push(c);else bad=true;}
+    setErr(bad?'هذا الحرف خارج جدول ASCII. بدّل لغة الكيبورد إلى الإنجليزية.':'');
+    if(next.length)setChars(p=>[...p,...next]);
+  }
+  function del(){
+    if(!chars.length)return;
+    setChars(p=>p.slice(0,-1));setErr('');
+    if(ref.current)ref.current.focus();
+  }
+  function onChange(e){
+    const v=e.target.value;
+    if(v.length<last.length){del();return;}
+    add(last&&v.includes(last)?v.replace(last,''):v);
+  }
+  function onKeyDown(e){
+    if(e.key==='Backspace'){e.preventDefault();del();return;}
+    if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();add(e.key);}
+  }
+
+  useEffect(()=>{
+    const f=e=>{
+      if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&document.activeElement!==ref.current&&ref.current){
+        e.preventDefault();add(e.key);ref.current.focus();
+      }
+    };
+    window.addEventListener('keydown',f);
+    return()=>window.removeEventListener('keydown',f);
+  },[]);
+
+  return h(React.Fragment,null,
+    h('h1',null,'محوّل الحروف إلى ثنائي وASCII'),
+    h('p',{className:'lead'},'اضغط أي حرف على الكيبورد وسيُثقَب على الشريط. كل عمود حرف واحد، وكل ثقب بتّ قيمته 1.'),
+    h('div',{className:'entry'},
+      h('input',{ref:ref,autoFocus:true,autoComplete:'off',autoCapitalize:'off',spellCheck:false,dir:'ltr','aria-label':'الحرف المكتوب',placeholder:'اكتب حرفاً من الكيبورد',
+        value:last,onChange,onKeyDown,onFocus:e=>e.target.select()}),
+      h('button',{type:'button',className:'btn del',onClick:del,disabled:!chars.length},'حذف الحرف')),
+    h('p',{className:'msg',role:'status'},err),
+    h(Tape,{chars}),
+    last&&h(Detail,{c:last}),
+    chars.length>0&&h('section',{className:'all'},
+      h('h2',null,'النص كاملاً بالثنائي'),
+      h('code',null,chars.map(bin).join(' ')),
+      h('h2',null,'النص كاملاً بأكواد ASCII'),
+      h('code',null,chars.map(c=>c.charCodeAt(0)).join(' '))));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>
